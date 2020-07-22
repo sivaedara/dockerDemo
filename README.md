@@ -4,6 +4,10 @@ Pre-req: Vagrant boxes already set up in your local machines or any linux machin
 Note:We are installing docker only in our build server, rest of servers we are going to use ansible playbooks
 https://github.com/sivaedara/vagrantBoxes
 
+To run some commans vagrant user might not be good enough so make sure to switch to root user
+
+*su root*
+
 ## Steps to install docker:
 -- This will fetch docker packages and dependencies from redhat and install docker
 
@@ -30,17 +34,22 @@ https://github.com/sivaedara/vagrantBoxes
 
 *docker ps -a*
 
-
-Make sure you have soem basic understanding about these concepts
+### Make sure you have soem basic understanding about these concepts
 Why Docker
+
 Adavantages
+
 Docker Images and tags
+
 Docker Containers
+
 what is DockerFile
+
 How to write Dockerfile (layers)
+
 DockerHub and localReistry
+
 Volumes
+
 Delete Images and containers
-
-
 
