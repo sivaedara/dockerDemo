@@ -5,23 +5,29 @@ Note:We are installing docker only in our build server, rest of servers we are g
 https://github.com/sivaedara/vagrantBoxes
 
 ## Steps to install docker:
--- This will fetch docker packages and dependencies from redhat and install doker
+-- This will fetch docker packages and dependencies from redhat and install docker
+
 *yum install docker -y*
 
 -- This command will start docker
+
 *systemctl start docker*
 
 -- This command will ensure docker to start after any system restarts.
+
 *systemctl enable docker*
 
 -- To view and tail docker logs
+
 *journalctl -f -u docker*
 
 ## Docker commands
 -- To list docker images
+
 *docker images*
 
 -- to list all docker containers
+
 *docker ps -a*
 
 
