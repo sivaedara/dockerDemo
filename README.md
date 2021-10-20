@@ -54,9 +54,3 @@ Volumes
 Delete Images and containers
 
 
-
-fktyfufli'clgc'''''
-
-
-fuf;
-
