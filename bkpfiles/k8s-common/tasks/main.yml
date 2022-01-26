@@ -1,0 +1,108 @@
+---
+- name: Disable swap
+  shell: swapoff -a
+
+- name: Remove swap from fstab
+  replace:
+    path: /etc/fstab
+    regexp: '^(\s*)([^#\n]+\s+)(\w+\s+)swap(\s+.*)$'
+    replace: '#\1\2\3swap\4'
+    backup: yes
+
+- name: Copy containerd modules file
+  copy:
+    src: containerd.conf
+    dest: /etc/modules-load.d/
+
+- name: Load kernel modules
+  shell: modprobe overlay && modprobe br_netfilter
+
+- name: Copy sysctl params
+  copy:
+    src: 99-kubernetes-cri.conf
+    dest: /etc/sysctl.d/
+
+- name: Reload sysctl
+  shell: sysctl --system
+
+- name: Check if search-disabled-repos.conf exist
+  stat: 
+    path: /etc/yum/pluginconf.d/search-disabled-repos.conf
+  register: search_disabled
+
+- name: Set yum notify_only to 0
+  lineinfile:
+    path: /etc/yum/pluginconf.d/search-disabled-repos.conf
+    regexp: '^notify_only='
+    line: notify_only=0
+  when: search_disabled.stat.exists == true
+
+- name: Install containerd baselines
+  yum: 
+    name:
+      - yum-utils
+      - device-mapper-persistent-data
+      - lvm2
+      - libseccomp
+    state: latest
+
+# - name: Add Docker repository
+#   shell: yum-config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
+#   args:
+#     creates: /etc/yum.repos.d/docker-ce.repo
+
+# - name: Install containerd
+#   yum:
+#     name: containerd.io
+#     state: latest
+#     update_cache: yes
+
+# - name: Create containerd config directory
+#   file:
+#     path: /etc/containerd
+#     state: directory
+
+# - name: Configure containerd
+#   shell: containerd config default > /etc/containerd/config.toml
+
+# - name: Restart containerd service
+#   systemd:
+#     name: containerd
+#     state: restarted
+#     enabled: yes
+
+# - name: Add Kubernetes yum repo
+#   yum_repository:
+#     name: Kubernetes
+#     description: Kubernetes YUM repo
+#     baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+#     gpgcheck: yes
+#     enabled: yes
+#     repo_gpgcheck: yes
+#     gpgkey:
+#       - https://packages.cloud.google.com/yum/doc/yum-key.gpg
+#       - https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+
+- name: Set SELinux to permissive mode 
+  shell: setenforce 0
+
+- name: Ensure SELinux is set to permissive mode persistently
+  lineinfile:
+    path: /etc/selinux/config
+    regexp: '^SELINUX='
+    line: SELINUX=permissive
+
+# - name: Install Kubernetes binaries
+#   yum: 
+#     name:
+#       - kubelet
+#       - kubeadm
+#       - kubectl
+#     state: latest
+
+- name: Enable kubelet
+  systemd:
+    name: kubelet
+    state: restarted
+    enabled: yes
+    daemon_reload: yes

@@ -1,0 +1,49 @@
+---
+- name: check if kubeadm has already run
+  stat:
+    path: "/etc/kubernetes/pki/ca.key"
+  register: kube_ca
+
+- name: Initialize the master
+  shell: kubeadm init --pod-network-cidr=192.168.0.0/16 --apiserver-bind-port=443
+  when: not kube_ca.stat.exists
+
+- name: Generate join command
+  command: kubeadm token create --print-join-command
+  register: join_command
+
+# We need to drop our privileges for this task due to ansible freaking out about not being able to create files on disk.
+- name: Copy join command to local file
+  local_action: copy content="{{ join_command.stdout_lines[0] }}" dest="/tmp/join-command"
+  become: no
+
+- name: Add KUBECONFIG to profile
+  blockinfile:
+    dest: /root/.bash_profile
+    block: |
+      export KUBECONFIG=/etc/kubernetes/admin.conf
+
+- name: Install calico pod network
+  shell: kubectl apply -f https://docs.projectcalico.org/v3.8/manifests/calico.yaml
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+
+- name: Get master node name
+  shell: kubectl get nodes -o jsonpath="{.items[*].metadata.name}"
+  register: node_name
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+
+- name: Untaint master
+  shell: kubectl taint node {{ node_name.stdout }} node-role.kubernetes.io/master:NoSchedule-
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+
+- name: Copy sender script
+  copy:
+    src: sendcreds.py
+    dest: /tmp/sendcreds.py
+    mode: '0777'
+
+- name: Send cluster config to creation initiator
+  command: python /tmp/sendcreds.py --email {{ emails }}
